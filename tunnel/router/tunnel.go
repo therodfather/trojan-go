@@ -2,13 +2,13 @@ package router
 
 import (
 	"context"
+
 	"github.com/p4gefau1t/trojan-go/tunnel"
 )
 
 const Name = "ROUTER"
 
-type Tunnel struct {
-}
+type Tunnel struct{}
 
 func (t *Tunnel) Name() string {
 	return Name

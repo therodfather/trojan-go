@@ -2,13 +2,16 @@ package tls
 
 import (
 	"context"
-	"github.com/p4gefau1t/trojan-go/common"
-	"github.com/p4gefau1t/trojan-go/config"
-	"github.com/p4gefau1t/trojan-go/test/util"
-	"github.com/p4gefau1t/trojan-go/tunnel/transport"
+	"io/ioutil"
 	"net"
 	"sync"
 	"testing"
+
+	"github.com/p4gefau1t/trojan-go/common"
+	"github.com/p4gefau1t/trojan-go/config"
+	"github.com/p4gefau1t/trojan-go/test/util"
+	"github.com/p4gefau1t/trojan-go/tunnel/freedom"
+	"github.com/p4gefau1t/trojan-go/tunnel/transport"
 )
 
 var cert string = `
@@ -66,10 +69,14 @@ WS94/5WE/lwHJi8ZPSjH1AURCzXhUi4fGvBrNBtry95e+jcEvP5c0g==
 `
 
 func TestDefaultTLS(t *testing.T) {
+	ioutil.WriteFile("server.crt", []byte(cert), 0777)
+	ioutil.WriteFile("server.key", []byte(key), 0777)
 	serverCfg := &Config{
 		TLS: TLSConfig{
-			KeyBytes:  []byte(key),
-			CertBytes: []byte(cert),
+			VerifyHostName: true,
+			CertCheckRate:  1,
+			KeyPath:        "server.key",
+			CertPath:       "server.crt",
 		},
 	}
 	clientCfg := &Config{
@@ -90,6 +97,7 @@ func TestDefaultTLS(t *testing.T) {
 		RemotePort: port,
 	}
 	ctx := config.WithConfig(context.Background(), transport.Name, transportConfig)
+	ctx = config.WithConfig(ctx, freedom.Name, &freedom.Config{})
 	tcpClient, err := transport.NewClient(ctx, nil)
 	common.Must(err)
 	tcpServer, err := transport.NewServer(ctx, nil)
@@ -123,6 +131,8 @@ func TestDefaultTLS(t *testing.T) {
 }
 
 func TestUTLS(t *testing.T) {
+	ioutil.WriteFile("server.crt", []byte(cert), 0777)
+	ioutil.WriteFile("server.key", []byte(key), 0777)
 	fingerprints := []string{
 		"chrome",
 		"firefox",
@@ -131,8 +141,9 @@ func TestUTLS(t *testing.T) {
 	for _, s := range fingerprints {
 		serverCfg := &Config{
 			TLS: TLSConfig{
-				KeyBytes:  []byte(key),
-				CertBytes: []byte(cert),
+				CertCheckRate: 1,
+				KeyPath:       "server.key",
+				CertPath:      "server.crt",
 			},
 		}
 		clientCfg := &Config{
@@ -153,6 +164,7 @@ func TestUTLS(t *testing.T) {
 			RemotePort: port,
 		}
 		ctx := config.WithConfig(context.Background(), transport.Name, transportConfig)
+		ctx = config.WithConfig(ctx, freedom.Name, &freedom.Config{})
 		tcpClient, err := transport.NewClient(ctx, nil)
 		common.Must(err)
 		tcpServer, err := transport.NewServer(ctx, nil)
@@ -185,5 +197,19 @@ func TestUTLS(t *testing.T) {
 		conn2.Close()
 		s.Close()
 		c.Close()
+	}
+}
+
+func TestMatch(t *testing.T) {
+	if !isDomainNameMatched("*.google.com", "www.google.com") {
+		t.Fail()
+	}
+
+	if isDomainNameMatched("*.google.com", "google.com") {
+		t.Fail()
+	}
+
+	if !isDomainNameMatched("localhost", "localhost") {
+		t.Fail()
 	}
 }

@@ -2,8 +2,10 @@ package mux
 
 import (
 	"context"
-	"github.com/p4gefau1t/trojan-go/tunnel/transport"
 	"testing"
+
+	"github.com/p4gefau1t/trojan-go/tunnel/freedom"
+	"github.com/p4gefau1t/trojan-go/tunnel/transport"
 
 	"github.com/p4gefau1t/trojan-go/common"
 	"github.com/p4gefau1t/trojan-go/config"
@@ -15,7 +17,7 @@ func TestMux(t *testing.T) {
 		Mux: MuxConfig{
 			Enabled:     true,
 			Concurrency: 8,
-			Timeout:     10,
+			IdleTimeout: 60,
 		},
 	}
 	ctx := config.WithConfig(context.Background(), Name, muxCfg)
@@ -28,6 +30,7 @@ func TestMux(t *testing.T) {
 		RemotePort: port,
 	}
 	ctx = config.WithConfig(ctx, transport.Name, transportConfig)
+	ctx = config.WithConfig(ctx, freedom.Name, &freedom.Config{})
 
 	tcpClient, err := transport.NewClient(ctx, nil)
 	common.Must(err)

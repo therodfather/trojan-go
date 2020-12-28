@@ -2,10 +2,11 @@ package statistic
 
 import (
 	"context"
-	"github.com/p4gefau1t/trojan-go/log"
 	"io"
 	"strings"
 	"sync"
+
+	"github.com/p4gefau1t/trojan-go/log"
 
 	"github.com/p4gefau1t/trojan-go/common"
 )
@@ -15,8 +16,7 @@ type TrafficMeter interface {
 	Hash() string
 	AddTraffic(sent, recv int)
 	GetTraffic() (sent, recv uint64)
-	ResetTraffic()
-	GetAndResetTraffic() (sent, recv uint64)
+	ResetTraffic() (sent, recv uint64)
 	GetSpeed() (sent, recv uint64)
 	SetSpeedLimit(sent, recv int)
 	GetSpeedLimit() (sent, recv int)

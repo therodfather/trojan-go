@@ -10,7 +10,7 @@ jobs:
     - name: Install Go
       uses: actions/setup-go@v1
       with:
-        go-version: 1.14.x
+        go-version: 1.15.x
     - name: Checkout code
       uses: actions/checkout@v2
     - name: Checkout tag
@@ -21,18 +21,14 @@ jobs:
         git checkout $tag_name
     - name: Build
       run: |
-        ./build-all.sh
+        make geosite.dat geoip.dat
+        make release -j$(nproc)
         set -x
         assets=()
-        for asset in ./release/*; do
+        for asset in ./*.zip; do
           assets+=("-a" "$asset")
         done
         tag_name="${GITHUB_REF##*/}"
         hub release create -p -d "${assets[@]}" -m "$tag_name" "$tag_name"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Upload binary
-      uses: actions/upload-artifact@v1
-      with:
-        name: dist-release
-        path: ./release

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+
 	"github.com/p4gefau1t/trojan-go/config"
 	"github.com/p4gefau1t/trojan-go/proxy"
 	"github.com/p4gefau1t/trojan-go/proxy/client"
@@ -21,8 +22,10 @@ const Name = "SERVER"
 func init() {
 	proxy.RegisterProxyCreator(Name, func(ctx context.Context) (*proxy.Proxy, error) {
 		cfg := config.FromContext(ctx, Name).(*client.Config)
+		ctx, cancel := context.WithCancel(ctx)
 		transportServer, err := transport.NewServer(ctx, nil)
 		if err != nil {
+			cancel()
 			return nil, err
 		}
 		clientStack := []string{freedom.Name}
@@ -59,12 +62,10 @@ func init() {
 		serverList := proxy.FindAllEndpoints(root)
 		clientList, err := proxy.CreateClientStack(ctx, clientStack)
 		if err != nil {
+			cancel()
 			return nil, err
 		}
-		if err != nil {
-			return nil, err
-		}
-		return proxy.NewProxy(ctx, serverList, clientList), nil
+		return proxy.NewProxy(ctx, cancel, serverList, clientList), nil
 	})
 
 }

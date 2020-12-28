@@ -3,15 +3,17 @@ package transport
 import (
 	"bufio"
 	"context"
-	"github.com/p4gefau1t/trojan-go/common"
-	"github.com/p4gefau1t/trojan-go/config"
-	"github.com/p4gefau1t/trojan-go/log"
-	"github.com/p4gefau1t/trojan-go/tunnel"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
+	"time"
+
+	"github.com/p4gefau1t/trojan-go/common"
+	"github.com/p4gefau1t/trojan-go/config"
+	"github.com/p4gefau1t/trojan-go/log"
+	"github.com/p4gefau1t/trojan-go/tunnel"
 )
 
 // Server is a server of transport layer
@@ -27,7 +29,7 @@ type Server struct {
 
 func (s *Server) Close() error {
 	s.cancel()
-	if s.cmd != nil {
+	if s.cmd != nil && s.cmd.Process != nil {
 		s.cmd.Process.Kill()
 	}
 	return s.tcpListener.Close()
@@ -40,7 +42,8 @@ func (s *Server) acceptLoop() {
 			select {
 			case <-s.ctx.Done():
 			default:
-				log.Fatal(common.NewError("transport accept error"))
+				log.Error(common.NewError("transport accept error").Base(err))
+				time.Sleep(time.Millisecond * 100)
 			}
 			return
 		}
@@ -104,7 +107,6 @@ func (s *Server) AcceptPacket(tunnel.Tunnel) (tunnel.PacketConn, error) {
 // NewServer creates a transport layer server
 func NewServer(ctx context.Context, _ tunnel.Server) (*Server, error) {
 	cfg := config.FromContext(ctx, Name).(*Config)
-	ctx, cancel := context.WithCancel(ctx)
 	listenAddress := tunnel.NewAddressFromHostPort("tcp", cfg.LocalHost, cfg.LocalPort)
 
 	var cmd *exec.Cmd
@@ -120,7 +122,7 @@ func NewServer(ctx context.Context, _ tunnel.Server) (*Server, error) {
 				"SS_REMOTE_PORT="+strconv.FormatInt(int64(cfg.LocalPort), 10),
 				"SS_LOCAL_HOST="+trojanHost,
 				"SS_LOCAL_PORT="+strconv.FormatInt(int64(trojanPort), 10),
-				"SS_PLUGIN_OPTIONS="+cfg.TransportPlugin.PluginOption,
+				"SS_PLUGIN_OPTIONS="+cfg.TransportPlugin.Option,
 			)
 
 			cfg.LocalHost = trojanHost
@@ -150,6 +152,8 @@ func NewServer(ctx context.Context, _ tunnel.Server) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	ctx, cancel := context.WithCancel(ctx)
 	server := &Server{
 		tcpListener: tcpListener,
 		cmd:         cmd,

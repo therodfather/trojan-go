@@ -2,10 +2,11 @@ package memory
 
 import (
 	"context"
-	"github.com/p4gefau1t/trojan-go/log"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/p4gefau1t/trojan-go/log"
 
 	"github.com/p4gefau1t/trojan-go/config"
 
@@ -133,14 +134,7 @@ func (u *User) GetTraffic() (uint64, uint64) {
 	return atomic.LoadUint64(&u.sent), atomic.LoadUint64(&u.recv)
 }
 
-func (u *User) ResetTraffic() {
-	atomic.StoreUint64(&u.sent, 0)
-	atomic.StoreUint64(&u.recv, 0)
-	atomic.StoreUint64(&u.lastSent, 0)
-	atomic.StoreUint64(&u.lastRecv, 0)
-}
-
-func (u *User) GetAndResetTraffic() (uint64, uint64) {
+func (u *User) ResetTraffic() (uint64, uint64) {
 	sent := atomic.SwapUint64(&u.sent, 0)
 	recv := atomic.SwapUint64(&u.recv, 0)
 	atomic.StoreUint64(&u.lastSent, 0)
@@ -191,7 +185,7 @@ func (a *Authenticator) AddUser(hash string) error {
 	a.Lock()
 	defer a.Unlock()
 	if _, found := a.users[hash]; found {
-		return common.NewError("Hash " + hash + " is already exist")
+		return common.NewError("hash " + hash + " is already exist")
 	}
 	ctx, cancel := context.WithCancel(a.ctx)
 	meter := &User{
@@ -220,9 +214,11 @@ func (a *Authenticator) DelUser(hash string) error {
 func (a *Authenticator) ListUsers() []statistic.User {
 	a.RLock()
 	defer a.RUnlock()
-	result := make([]statistic.User, 0, len(a.users))
+	result := make([]statistic.User, len(a.users))
+	i := 0
 	for _, u := range a.users {
-		result = append(result, u)
+		result[i] = u
+		i++
 	}
 	return result
 }

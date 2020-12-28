@@ -4,14 +4,15 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/p4gefau1t/trojan-go/common"
-	"github.com/p4gefau1t/trojan-go/log"
-	"github.com/p4gefau1t/trojan-go/tunnel"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/p4gefau1t/trojan-go/common"
+	"github.com/p4gefau1t/trojan-go/log"
+	"github.com/p4gefau1t/trojan-go/tunnel"
 )
 
 type ConnectConn struct {
@@ -89,6 +90,7 @@ func (s *Server) acceptLoop() {
 				log.Error(common.NewError("not a valid http request").Base(err))
 				return
 			}
+
 			if strings.ToUpper(req.Method) == "CONNECT" { // CONNECT
 				addr, err := tunnel.NewAddressFromAddr("tcp", req.Host)
 				if err != nil {
@@ -112,23 +114,15 @@ func (s *Server) acceptLoop() {
 			} else { // GET, POST, PUT...
 				defer conn.Close()
 				for {
-					ctx, cancel := context.WithCancel(s.ctx)
 					reqReader, reqWriter := io.Pipe()
 					respReader, respWriter := io.Pipe()
 					var addr *tunnel.Address
-					_, strPort, err := net.SplitHostPort(req.Host)
-					if err != nil {
-						if strPort == "" { //default port 80
-							addr = tunnel.NewAddressFromHostPort("tcp", req.Host, 80)
-						}
-					} else {
-						addr, err = tunnel.NewAddressFromAddr("tcp", req.Host)
-						if err != nil {
-							log.Error(common.NewError("invalid http dest address").Base(err))
-							return
-						}
+					if addr, err = tunnel.NewAddressFromAddr("tcp", req.Host); err != nil {
+						addr = tunnel.NewAddressFromHostPort("tcp", req.Host, 80)
 					}
 					log.Debug("http dest", addr)
+
+					ctx, cancel := context.WithCancel(s.ctx)
 					newConn := &OtherConn{
 						Conn: conn,
 						metadata: &tunnel.Metadata{

@@ -2,13 +2,13 @@ package websocket
 
 import (
 	"context"
+
 	"github.com/p4gefau1t/trojan-go/tunnel"
 )
 
 const Name = "WEBSOCKET"
 
-type Tunnel struct {
-}
+type Tunnel struct{}
 
 func (*Tunnel) Name() string {
 	return Name
