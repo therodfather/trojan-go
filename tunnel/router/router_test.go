@@ -28,8 +28,7 @@ func (m MockClient) Close() error {
 	return nil
 }
 
-type MockPacketConn struct {
-}
+type MockPacketConn struct{}
 
 func (m MockPacketConn) ReadFrom(p []byte) (n int, addr net.Addr, err error) {
 	panic("implement me")
@@ -77,11 +76,11 @@ router:
     - "full:localhost"
     - "domain:bypass.com"
     block:
-    - "regex:blockreg(.*)"
+    - "regexp:blockreg(.*)"
     - "full:blockfull"
     - "domain:block.com"
     proxy:
-    - "regex:proxyreg(.*)"
+    - "regexp:proxyreg(.*)"
     - "full:proxyfull"
     - "domain:proxy.com"
     - "cidr:192.168.1.1/16"
